@@ -1,10 +1,68 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../dashboard/dashboard_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+bool _loading = false;
+@override
+void dispose() {
+  _emailController.dispose();
+  _passwordController.dispose();
+  super.dispose();
+}
+Future<void> _login() async {
+
+  if (_emailController.text.trim().isEmpty ||
+      _passwordController.text.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Please enter email and password"),
+      ),
+    );
+    return;
+  }
+
+  setState(() {
+    _loading = true;
+  });
+  try {
+    await Supabase.instance.client.auth.signInWithPassword(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const DashboardScreen(),
+      ),
+    );
+  } on AuthException catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.message)),
+    );
+  } finally {
+    if (mounted) {
+      setState(() {
+        _loading = false;
+      });
+    }
+  }
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -73,8 +131,11 @@ class LoginScreen extends StatelessWidget {
                   children: [
 
                     TextField(
+  controller: _emailController,
+                      
                       decoration: const InputDecoration(
                         labelText: "Email",
+                        
                         prefixIcon: Icon(Icons.email_outlined),
                       ),
                     ),
@@ -82,6 +143,7 @@ class LoginScreen extends StatelessWidget {
                     const SizedBox(height: 22),
 
                     TextField(
+  controller: _passwordController,
                       obscureText: true,
                       decoration: const InputDecoration(
                         labelText: "Password",
@@ -93,30 +155,38 @@ class LoginScreen extends StatelessWidget {
                     const SizedBox(height: 30),
 
                     SizedBox(
-                      width: double.infinity,
-                      height: 55,
-                      child: ElevatedButton(
-                        onPressed: () {},
+  width: double.infinity,
+  height: 55,
+  child: ElevatedButton(
+    onPressed: _loading ? null : _login,
+    child: _loading
+        ? const SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 2.5,
+            ),
+          )
+        : const Text(
+            "Login",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+  ),
+),
 
-                        child: const Text(
-                          "Login",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
+const SizedBox(height: 30),
+
+const Text(
+  "MITMAAI LeadHer Initiative",
+  style: TextStyle(
+    color: Colors.black45,
+  ),
+),
                   ],
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              const Text(
-                "MITMAAI LeadHer Initiative",
-                style: TextStyle(
-                  color: Colors.black45,
                 ),
               ),
             ],

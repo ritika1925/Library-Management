@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../members/members_screen.dart';
+import '../books/books_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -7,13 +9,13 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final actions = [
-      {"title": "Register Reader", "icon": Icons.person_add_alt_1},
-      {"title": "Add Book", "icon": Icons.menu_book},
+      {"title": "Members", "icon": Icons.people},
+      {"title": "Books", "icon": Icons.menu_book},
       {"title": "Issue Book", "icon": Icons.library_add},
       {"title": "Return Book", "icon": Icons.assignment_return},
-      {"title": "Reading Records", "icon": Icons.receipt_long},
       {"title": "Reports", "icon": Icons.bar_chart},
     ];
+      
 
     return Scaffold(
       appBar: AppBar(
@@ -41,7 +43,51 @@ class DashboardScreen extends StatelessWidget {
               ),
               child: InkWell(
                 borderRadius: BorderRadius.circular(20),
-                onTap: () {},
+                onTap: () {
+  switch (action["title"]) {
+    case "Members":
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const MembersScreen(),
+        ),
+      );
+      break;
+
+    case "Books":
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const BooksScreen(),
+    ),
+  );
+  break;
+
+    case "Issue Book":
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Issue Book module coming soon"),
+        ),
+      );
+      break;
+
+    case "Return Book":
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Return Book module coming soon"),
+        ),
+      );
+      break;
+
+    case "Reports":
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Reports module coming soon"),
+        ),
+      );
+      break;
+  }
+},
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

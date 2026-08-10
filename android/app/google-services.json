@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "578796026792",
+    "project_id": "baithak-library",
+    "storage_bucket": "baithak-library.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:578796026792:android:30cab49e9c52968e54fb9d",
+        "android_client_info": {
+          "package_name": "com.example.baithak_library"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBmWQFfs1bth5S6bkEb8SHnhLjozElVZXY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
