@@ -12,17 +12,30 @@ class AddBookScreen extends StatefulWidget {
 class _AddBookScreenState extends State<AddBookScreen> {
   final _titleController = TextEditingController();
   final _authorController = TextEditingController();
-  final _categoryController = TextEditingController();
   final _copiesController = TextEditingController();
 
   final BookService _bookService = BookService();
 
   bool _loading = false;
 
+  // Book categories
+  String? _selectedCategory;
+
+  final List<String> _categories = [
+    'Fiction',
+    'Classics',
+    'Fantasy and Sci-Fi',
+    'Romance and Y/A',
+    'Mystery and Thriller',
+    'Self Growth',
+    'Indian Heritage',
+    'Manga and Comics',
+  ];
+
   Future<void> _addBook() async {
     if (_titleController.text.trim().isEmpty ||
         _authorController.text.trim().isEmpty ||
-        _categoryController.text.trim().isEmpty ||
+        _selectedCategory == null ||
         _copiesController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -53,8 +66,9 @@ class _AddBookScreenState extends State<AddBookScreen> {
       await _bookService.addBook(
         title: _titleController.text.trim(),
         author: _authorController.text.trim(),
-        category: _categoryController.text.trim(),
+        category: _selectedCategory!,
         numberOfCopies: numberOfCopies,
+        available: numberOfCopies > 0 ? "Yes" : "No",
       );
 
       if (!mounted) return;
@@ -87,7 +101,6 @@ class _AddBookScreenState extends State<AddBookScreen> {
   void dispose() {
     _titleController.dispose();
     _authorController.dispose();
-    _categoryController.dispose();
     _copiesController.dispose();
     super.dispose();
   }
@@ -126,7 +139,6 @@ class _AddBookScreenState extends State<AddBookScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
 
               children: [
-
                 const Text(
                   "Add New Book",
                   style: TextStyle(
@@ -146,6 +158,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
 
                 const SizedBox(height: 30),
 
+                // Book Title
                 TextField(
                   controller: _titleController,
                   decoration: const InputDecoration(
@@ -156,6 +169,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
 
                 const SizedBox(height: 20),
 
+                // Author
                 TextField(
                   controller: _authorController,
                   decoration: const InputDecoration(
@@ -166,16 +180,29 @@ class _AddBookScreenState extends State<AddBookScreen> {
 
                 const SizedBox(height: 20),
 
-                TextField(
-                  controller: _categoryController,
+                // Category Dropdown
+                DropdownButtonFormField<String>(
+                  value: _selectedCategory,
                   decoration: const InputDecoration(
                     labelText: "Category",
                     prefixIcon: Icon(Icons.category_outlined),
                   ),
+                  items: _categories.map((category) {
+                    return DropdownMenuItem<String>(
+                      value: category,
+                      child: Text(category),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedCategory = value;
+                    });
+                  },
                 ),
 
                 const SizedBox(height: 20),
 
+                // Number of Copies
                 TextField(
                   controller: _copiesController,
                   keyboardType: TextInputType.number,

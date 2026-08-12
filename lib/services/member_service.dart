@@ -28,4 +28,23 @@ class MemberService {
 
   return List<Map<String, dynamic>>.from(response);
 }
+ Future<void> updateMember({
+  required String memberCode,
+  required String fullName,
+  required String phone,
+  required String email,
+  required String department,
+  required String batch,
+}) async {
+  await client
+      .from('members')
+      .update({
+        'full_name': fullName,
+        'phone': phone,
+        'email': email,
+        'department': department,
+        'batch': batch,
+      })
+      .eq('member_code', memberCode);
+}
 }

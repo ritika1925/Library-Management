@@ -3,21 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class BookService {
   final SupabaseClient client = Supabase.instance.client;
 
-  Future<void> addBook({
-    required String title,
-    required String author,
-    required String category,
-    required int numberOfCopies,
-  }) async {
-    await client.from('books').insert({
-      'title': title,
-      'author': author,
-      'category': category,
-      'No._of_copies': numberOfCopies,
-      'available': 'Yes',
-    });
-  }
-
+  // Get all books
   Future<List<Map<String, dynamic>>> getBooks() async {
     final response = await client
         .from('books')
@@ -27,11 +13,49 @@ class BookService {
     return List<Map<String, dynamic>>.from(response);
   }
 
-  Future<Map<String, dynamic>?> getBookById(String bookId) async {
-    return await client
+  // Add a new book
+  Future<void> addBook({
+    required String title,
+    required String author,
+    required String category,
+    required int numberOfCopies,
+    required String available,
+  }) async {
+    await client.from('books').insert({
+      'title': title,
+      'author': author,
+      'category': category,
+      'No._of_copies': numberOfCopies,
+      'available': available,
+    });
+  }
+
+  // Update an existing book
+  Future<void> updateBook({
+    required String bookId,
+    required String title,
+    required String author,
+    required String category,
+    required int numberOfCopies,
+    required String available,
+  }) async {
+    await client
         .from('books')
-        .select()
-        .eq('book_id', bookId)
-        .maybeSingle();
+        .update({
+          'title': title,
+          'author': author,
+          'category': category,
+          'No._of_copies': numberOfCopies,
+          'available': available,
+        })
+        .eq('book_id', bookId);
+  }
+
+  // Delete a book
+  Future<void> deleteBook(String bookId) async {
+    await client
+        .from('books')
+        .delete()
+        .eq('book_id', bookId);
   }
 }

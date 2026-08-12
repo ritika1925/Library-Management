@@ -15,6 +15,8 @@ class _MembersScreenState extends State<MembersScreen> {
   final MemberService _memberService = MemberService();
 
   List<Map<String, dynamic>> members = [];
+  List<Map<String, dynamic>> filteredMembers = [];
+
   bool loading = true;
 
   @override
@@ -23,14 +25,67 @@ class _MembersScreenState extends State<MembersScreen> {
     loadMembers();
   }
 
- Future<void> loadMembers() async {
-  final data = await _memberService.getMembers();
+  Future<void> loadMembers() async {
+    try {
+      final data = await _memberService.getMembers();
 
-  print("Members from Supabase: $data");
+      if (!mounted) return;
 
-  setState(() {
-      members = data;
-      loading = false;
+      setState(() {
+        members = data;
+        filteredMembers = data;
+        loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        loading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Failed to load members: $e"),
+        ),
+      );
+    }
+  }
+
+  // Search members
+  void searchMembers(String query) {
+    final searchQuery = query.trim().toLowerCase();
+
+    setState(() {
+      if (searchQuery.isEmpty) {
+        filteredMembers = members;
+      } else {
+        filteredMembers = members.where((member) {
+          final memberCode =
+              member['member_code']?.toString().toLowerCase() ?? '';
+
+          final name =
+              member['full_name']?.toString().toLowerCase() ?? '';
+
+          final email =
+              member['email']?.toString().toLowerCase() ?? '';
+
+          final phone =
+              member['phone']?.toString().toLowerCase() ?? '';
+
+          final department =
+              member['department']?.toString().toLowerCase() ?? '';
+
+          final batch =
+              member['batch']?.toString().toLowerCase() ?? '';
+
+          return memberCode.contains(searchQuery) ||
+              name.contains(searchQuery) ||
+              email.contains(searchQuery) ||
+              phone.contains(searchQuery) ||
+              department.contains(searchQuery) ||
+              batch.contains(searchQuery);
+        }).toList();
+      }
     });
   }
 
@@ -48,13 +103,15 @@ class _MembersScreenState extends State<MembersScreen> {
 
         child: Column(
           children: [
-            /// Search + Register
+            // Search + Register
             Row(
               children: [
                 Expanded(
                   child: TextField(
+                    onChanged: searchMembers,
                     decoration: InputDecoration(
-                      hintText: "Search by Name or Member ID",
+                      hintText:
+                          "Search by Name, Member ID, Email, Phone, Department or Batch",
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -90,20 +147,21 @@ class _MembersScreenState extends State<MembersScreen> {
                   ? const Center(
                       child: CircularProgressIndicator(),
                     )
-                  : members.isEmpty
+                  : filteredMembers.isEmpty
                       ? const Center(
                           child: Text(
-                            "No members registered yet.",
+                            "No members found.",
                             style: TextStyle(fontSize: 16),
                           ),
                         )
                       : ListView.builder(
-                          itemCount: members.length,
+                          itemCount: filteredMembers.length,
                           itemBuilder: (context, index) {
-                            final member = members[index];
+                            final member = filteredMembers[index];
 
                             return Card(
-                              margin: const EdgeInsets.only(bottom: 12),
+                              margin:
+                                  const EdgeInsets.only(bottom: 12),
 
                               child: ListTile(
                                 leading: const Icon(
@@ -112,27 +170,37 @@ class _MembersScreenState extends State<MembersScreen> {
                                 ),
 
                                 title: Text(
-                                  member['member_code'] ?? '',
+                                  member['member_code']
+                                          ?.toString() ??
+                                      '',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
 
                                 subtitle: Text(
-                                  member['full_name'] ?? '',
+                                  member['full_name']
+                                          ?.toString() ??
+                                      '',
                                 ),
 
-                                trailing:
-                                    const Icon(Icons.chevron_right),
+                                trailing: const Icon(
+                                  Icons.chevron_right,
+                                ),
 
-                                onTap: () {
-                                  // Member Details screen comes next
-                                  Navigator.push(
+                                onTap: () async {
+                                  await Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => MemberDetailsScreen(member: member),
+                                      builder: (_) =>
+                                          MemberDetailsScreen(
+                                        member: member,
+                                      ),
                                     ),
                                   );
+
+                                  // Refresh after returning
+                                  loadMembers();
                                 },
                               ),
                             );

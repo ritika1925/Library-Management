@@ -15,6 +15,8 @@ class _BooksScreenState extends State<BooksScreen> {
   final BookService _bookService = BookService();
 
   List<Map<String, dynamic>> books = [];
+  List<Map<String, dynamic>> filteredBooks = [];
+
   bool loading = true;
 
   @override
@@ -31,6 +33,7 @@ class _BooksScreenState extends State<BooksScreen> {
 
       setState(() {
         books = data;
+        filteredBooks = data;
         loading = false;
       });
     } catch (e) {
@@ -48,6 +51,36 @@ class _BooksScreenState extends State<BooksScreen> {
     }
   }
 
+  // Search books
+  void searchBooks(String query) {
+    final searchQuery = query.trim().toLowerCase();
+
+    setState(() {
+      if (searchQuery.isEmpty) {
+        filteredBooks = books;
+      } else {
+        filteredBooks = books.where((book) {
+          final bookId =
+              book['book_id']?.toString().toLowerCase() ?? '';
+
+          final title =
+              book['title']?.toString().toLowerCase() ?? '';
+
+          final author =
+              book['author']?.toString().toLowerCase() ?? '';
+
+          final category =
+              book['category']?.toString().toLowerCase() ?? '';
+
+          return bookId.contains(searchQuery) ||
+              title.contains(searchQuery) ||
+              author.contains(searchQuery) ||
+              category.contains(searchQuery);
+        }).toList();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -62,15 +95,15 @@ class _BooksScreenState extends State<BooksScreen> {
 
         child: Column(
           children: [
-
             // Search + Add Book
             Row(
               children: [
-
                 Expanded(
                   child: TextField(
+                    onChanged: searchBooks,
                     decoration: InputDecoration(
-                      hintText: "Search by Book Name or Book ID",
+                      hintText:
+                          "Search by Book Name, ID, Author or Category",
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -105,20 +138,21 @@ class _BooksScreenState extends State<BooksScreen> {
                   ? const Center(
                       child: CircularProgressIndicator(),
                     )
-                  : books.isEmpty
+                  : filteredBooks.isEmpty
                       ? const Center(
                           child: Text(
-                            "No books added yet.",
+                            "No books found.",
                             style: TextStyle(fontSize: 16),
                           ),
                         )
                       : ListView.builder(
-                          itemCount: books.length,
+                          itemCount: filteredBooks.length,
                           itemBuilder: (context, index) {
-                            final book = books[index];
+                            final book = filteredBooks[index];
 
                             return Card(
-                              margin: const EdgeInsets.only(bottom: 12),
+                              margin:
+                                  const EdgeInsets.only(bottom: 12),
 
                               child: ListTile(
                                 leading: const CircleAvatar(
@@ -130,36 +164,44 @@ class _BooksScreenState extends State<BooksScreen> {
                                 ),
 
                                 title: Text(
-                                  book['book_id'] ?? '',
+                                  book['book_id']?.toString() ?? '',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
 
                                 subtitle: Text(
-                                  book['title'] ?? '',
+                                  book['title']?.toString() ?? '',
                                 ),
 
                                 trailing: Text(
-                                  book['available'] ?? '',
+                                  book['available']
+                                          ?.toString() ??
+                                      '',
                                   style: TextStyle(
-                                    color: book['available'] == 'Yes'
+                                    color: book['available']
+                                                ?.toString() ==
+                                            'Yes'
                                         ? Colors.green
                                         : Colors.red,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
 
-                                onTap: () {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => BookDetailsScreen(
-        book: book,
-      ),
-    ),
-  );
-},
+                                onTap: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          BookDetailsScreen(
+                                        book: book,
+                                      ),
+                                    ),
+                                  );
+
+                                  // Refresh after returning
+                                  loadBooks();
+                                },
                               ),
                             );
                           },
