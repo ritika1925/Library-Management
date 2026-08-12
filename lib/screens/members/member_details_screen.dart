@@ -20,6 +20,9 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
   bool _editing = false;
   bool _saving = false;
 
+  List<Map<String, dynamic>> _borrowingHistory = [];
+  bool _loadingHistory = true;
+
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   late TextEditingController _emailController;
@@ -49,6 +52,37 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
     _batchController = TextEditingController(
       text: widget.member['batch']?.toString() ?? '',
     );
+
+    loadBorrowingHistory();
+  }
+
+  Future<void> loadBorrowingHistory() async {
+    try {
+      final data = await _memberService.getBorrowingHistory(
+        widget.member['id'].toString(),
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _borrowingHistory = data;
+        _loadingHistory = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _loadingHistory = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Failed to load borrowing history: $e",
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -85,12 +119,21 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
         batch: _batchController.text.trim(),
       );
 
-      // Update the local member data as well
-      widget.member['full_name'] = _nameController.text.trim();
-      widget.member['phone'] = _phoneController.text.trim();
-      widget.member['email'] = _emailController.text.trim();
-      widget.member['department'] = _departmentController.text.trim();
-      widget.member['batch'] = _batchController.text.trim();
+      // Update local member data
+      widget.member['full_name'] =
+          _nameController.text.trim();
+
+      widget.member['phone'] =
+          _phoneController.text.trim();
+
+      widget.member['email'] =
+          _emailController.text.trim();
+
+      widget.member['department'] =
+          _departmentController.text.trim();
+
+      widget.member['batch'] =
+          _batchController.text.trim();
 
       if (!mounted) return;
 
@@ -108,7 +151,9 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Failed to update member: $e"),
+          content: Text(
+            "Failed to update member: $e",
+          ),
         ),
       );
     } finally {
@@ -167,6 +212,94 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
     );
   }
 
+  Widget borrowingHistorySection() {
+    if (_loadingHistory) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_borrowingHistory.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text(
+          "No borrowing history yet.",
+          style: TextStyle(
+            color: Colors.black54,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: _borrowingHistory.map((issue) {
+        final bookData = issue['books'];
+
+        final String bookTitle =
+            bookData is Map
+                ? bookData['title']?.toString() ??
+                    'Unknown Book'
+                : 'Unknown Book';
+
+        final String status =
+            issue['status']?.toString() ?? '';
+
+        final bool isIssued = status == 'Issued';
+
+        return Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 15,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.menu_book,
+                color: AppTheme.primary,
+              ),
+
+              const SizedBox(width: 14),
+
+              Expanded(
+                child: Text(
+                  bookTitle,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+
+              Text(
+                status,
+                style: TextStyle(
+                  color: isIssued
+                      ? Colors.orange.shade700
+                      : Colors.green.shade700,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final member = widget.member;
@@ -176,7 +309,6 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
         title: const Text("Member Details"),
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
-
         actions: [
           if (!_editing)
             IconButton(
@@ -212,7 +344,9 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
             ),
 
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+
               children: [
 
                 // MEMBER HEADER
@@ -236,17 +370,22 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
                             CrossAxisAlignment.start,
                         children: [
                           Text(
-                            member['full_name'] ?? '',
+                            member['full_name']
+                                    ?.toString() ??
+                                '',
                             style: const TextStyle(
                               fontSize: 24,
-                              fontWeight: FontWeight.bold,
+                              fontWeight:
+                                  FontWeight.bold,
                             ),
                           ),
 
                           const SizedBox(height: 4),
 
                           Text(
-                            member['member_code'] ?? '',
+                            member['member_code']
+                                    ?.toString() ??
+                                '',
                             style: const TextStyle(
                               color: Colors.black54,
                               fontSize: 15,
@@ -301,14 +440,16 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
                                   _editing = false;
                                 });
                               },
-                        child: const Text("Cancel"),
+                        child:
+                            const Text("Cancel"),
                       ),
 
                       const SizedBox(width: 10),
 
                       ElevatedButton(
-                        onPressed:
-                            _saving ? null : _saveChanges,
+                        onPressed: _saving
+                            ? null
+                            : _saveChanges,
                         child: _saving
                             ? const SizedBox(
                                 width: 20,
@@ -325,27 +466,37 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
                 ] else ...[
                   infoRow(
                     "Phone",
-                    member['phone']?.toString() ?? '',
+                    member['phone']
+                            ?.toString() ??
+                        '',
                   ),
 
                   infoRow(
                     "Department",
-                    member['department']?.toString() ?? '',
+                    member['department']
+                            ?.toString() ??
+                        '',
                   ),
 
                   infoRow(
                     "Batch",
-                    member['batch']?.toString() ?? '',
+                    member['batch']
+                            ?.toString() ??
+                        '',
                   ),
 
                   infoRow(
                     "Email",
-                    member['email']?.toString() ?? '',
+                    member['email']
+                            ?.toString() ??
+                        '',
                   ),
 
                   infoRow(
                     "Status",
-                    member['status']?.toString() ?? '',
+                    member['status']
+                            ?.toString() ??
+                        '',
                   ),
                 ],
 
@@ -365,21 +516,8 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
 
                 const SizedBox(height: 12),
 
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius:
-                        BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    "No borrowing history yet.",
-                    style: TextStyle(
-                      color: Colors.black54,
-                    ),
-                  ),
-                ),
+                // BORROWING HISTORY
+                borrowingHistorySection(),
               ],
             ),
           ),

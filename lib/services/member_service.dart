@@ -47,4 +47,23 @@ class MemberService {
       })
       .eq('member_code', memberCode);
 }
+// Get borrowing history for a member
+Future<List<Map<String, dynamic>>> getBorrowingHistory(
+  String memberId,
+) async {
+  final response = await client
+      .from('book_issues')
+      .select('''
+        id,
+        status,
+        book_id,
+        books (
+          title
+        )
+      ''')
+      .eq('member_id', memberId)
+      .order('issue_date', ascending: false);
+
+  return List<Map<String, dynamic>>.from(response);
+}
 }
