@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../members/members_screen.dart';
 import '../books/books_screen.dart';
+import '../issue/issue_book_screen.dart';
+import '../issue/return_book_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -64,17 +66,19 @@ class DashboardScreen extends StatelessWidget {
   break;
 
     case "Issue Book":
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Issue Book module coming soon"),
-        ),
-      );
-      break;
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const IssueBookScreen(),
+    ),
+  );
+  break;
 
     case "Return Book":
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Return Book module coming soon"),
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const ReturnBookScreen(),
         ),
       );
       break;
