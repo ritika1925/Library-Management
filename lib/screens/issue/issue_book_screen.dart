@@ -124,60 +124,34 @@ class _IssueBookScreenState extends State<IssueBookScreen> {
   // ------------------------------------------------------------
   // ISSUE BOOK
   // ------------------------------------------------------------
-
-  Future<void> _issueBook() async {
-    if (_selectedMemberId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please select a member"),
-        ),
-      );
-      return;
-    }
-
-    if (_selectedBookId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please select a book"),
-        ),
-      );
-      return;
-    }
-
-    if (!_dueDate.isAfter(_issueDate)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Due date must be after issue date"),
-        ),
-      );
-      return;
-    }
-
-    // Find selected book.
-    final selectedBook = _books.firstWhere(
-      (book) => book['id'].toString() == _selectedBookId,
-      orElse: () => {},
+Future<void> _issueBook() async {
+  if (_selectedMemberId == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Please select a member"),
+      ),
     );
+    return;
+  }
 
-    final availableCopies =
-        (selectedBook['available_copies'] ?? 0) as int;
-
-    if (availableCopies <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "No copies of this book are currently available.",
-          ),
-        ),
-      );
-      return;
-    }
+  if (_selectedBookId == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Please select a book"),
+      ),
+    );
+    return;
+  }
 
     setState(() {
       _issuing = true;
     });
 
     try {
+      print("========== ISSUE BOOK DEBUG ==========");
+      print("Selected Member ID: $_selectedMemberId");
+      print("Selected Book ID: $_selectedBookId");
+      print("======================================");
       await _issueBookService.issueBook(
         memberId: _selectedMemberId!,
         bookId: _selectedBookId!,
