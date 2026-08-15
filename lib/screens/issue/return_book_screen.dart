@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import '../../services/return_book_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/issue_book_service.dart';
 
@@ -12,7 +12,7 @@ class ReturnBookScreen extends StatefulWidget {
 
 class _ReturnBookScreenState extends State<ReturnBookScreen> {
   final IssueBookService _issueBookService = IssueBookService();
-
+  final ReturnBookService _returnBookService = ReturnBookService();
   List<Map<String, dynamic>> _issues = [];
 
   bool _loading = true;
@@ -141,10 +141,9 @@ class _ReturnBookScreenState extends State<ReturnBookScreen> {
     });
 
     try {
-      await _issueBookService.returnBook(
-        issueId: issueId,
-      );
-
+      await _returnBookService.returnBook(
+  issueId: issueId,
+);
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
