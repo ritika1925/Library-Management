@@ -53,19 +53,33 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
       text: widget.member['batch']?.toString() ?? '',
     );
 
-    loadBorrowingHistory();
+    _loadBorrowingHistory();
   }
 
-  Future<void> loadBorrowingHistory() async {
+  // ============================================================
+  // LOAD BORROWING HISTORY
+  // ============================================================
+
+  Future<void> _loadBorrowingHistory() async {
     try {
-      final data = await _memberService.getBorrowingHistory(
-        widget.member['id'].toString(),
-      );
+      final memberId = widget.member['id']?.toString();
+
+      if (memberId == null || memberId.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _loadingHistory = false;
+          });
+        }
+        return;
+      }
+
+      final history =
+          await _memberService.getBorrowingHistory(memberId);
 
       if (!mounted) return;
 
       setState(() {
-        _borrowingHistory = data;
+        _borrowingHistory = history;
         _loadingHistory = false;
       });
     } catch (e) {
@@ -92,8 +106,13 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
     _emailController.dispose();
     _departmentController.dispose();
     _batchController.dispose();
+
     super.dispose();
   }
+
+  // ============================================================
+  // SAVE MEMBER
+  // ============================================================
 
   Future<void> _saveChanges() async {
     if (_nameController.text.trim().isEmpty) {
@@ -119,7 +138,7 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
         batch: _batchController.text.trim(),
       );
 
-      // Update local member data
+      // Update local member data.
       widget.member['full_name'] =
           _nameController.text.trim();
 
@@ -165,7 +184,14 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
     }
   }
 
-  Widget infoRow(String label, String value) {
+  // ============================================================
+  // INFO ROW
+  // ============================================================
+
+  Widget infoRow(
+    String label,
+    String value,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -194,6 +220,10 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
     );
   }
 
+  // ============================================================
+  // EDIT FIELD
+  // ============================================================
+
   Widget editField(
     String label,
     TextEditingController controller,
@@ -211,6 +241,36 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
       ),
     );
   }
+
+  // ============================================================
+  // FORMAT DATE
+  // ============================================================
+
+  String _formatDate(dynamic value) {
+    if (value == null) {
+      return '';
+    }
+
+    final dateString = value.toString();
+
+    if (dateString.isEmpty) {
+      return '';
+    }
+
+    try {
+      final date = DateTime.parse(dateString);
+
+      return '${date.day.toString().padLeft(2, '0')}/'
+          '${date.month.toString().padLeft(2, '0')}/'
+          '${date.year}';
+    } catch (_) {
+      return dateString;
+    }
+  }
+
+  // ============================================================
+  // BORROWING HISTORY SECTION
+  // ============================================================
 
   Widget borrowingHistorySection() {
     if (_loadingHistory) {
@@ -241,64 +301,225 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
 
     return Column(
       children: _borrowingHistory.map((issue) {
+        // ------------------------------------------------------
+        // BOOK DATA
+        // ------------------------------------------------------
+
         final bookData = issue['books'];
 
-        final String bookTitle =
-            bookData is Map
-                ? bookData['title']?.toString() ??
-                    'Unknown Book'
-                : 'Unknown Book';
+        String bookTitle = 'Unknown Book';
+        String bookId = '';
 
-        final String status =
-            issue['status']?.toString() ?? '';
+        if (bookData is Map) {
+          bookTitle =
+              bookData['title']?.toString() ??
+              'Unknown Book';
 
-        final bool isIssued = status == 'Issued';
+          bookId =
+              bookData['book_id']?.toString() ??
+              '';
+        }
+
+        // ------------------------------------------------------
+        // ISSUE DATA
+        // ------------------------------------------------------
+
+        final status =
+            issue['status']?.toString() ?? 'Unknown';
+
+        final issueDate =
+            _formatDate(issue['issue_date']);
+
+        final dueDate =
+            _formatDate(issue['due_date']);
+
+        final returnDate =
+            _formatDate(issue['return_date']);
+
+        final isIssued =
+            status.toLowerCase() == 'issued';
+
+        // ------------------------------------------------------
+        // STATUS COLOR
+        // ------------------------------------------------------
+
+        final statusColor = isIssued
+            ? Colors.orange.shade700
+            : Colors.green.shade700;
+
+        // ------------------------------------------------------
+        // CARD
+        // ------------------------------------------------------
 
         return Container(
           width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 18,
-            vertical: 15,
-          ),
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.grey.shade100,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.grey.shade200,
+            ),
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
             children: [
-              const Icon(
-                Icons.menu_book,
-                color: AppTheme.primary,
-              ),
 
-              const SizedBox(width: 14),
-
-              Expanded(
-                child: Text(
-                  bookTitle,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+              // BOOK TITLE + STATUS
+              Row(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  const CircleAvatar(
+                    radius: 22,
+                    backgroundColor: AppTheme.primary,
+                    child: Icon(
+                      Icons.menu_book,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                   ),
-                ),
+
+                  const SizedBox(width: 12),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          bookTitle,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight:
+                                FontWeight.w600,
+                          ),
+                        ),
+
+                        if (bookId.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            bookId,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  Text(
+                    status,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
 
-              Text(
-                status,
-                style: TextStyle(
-                  color: isIssued
-                      ? Colors.orange.shade700
-                      : Colors.green.shade700,
-                  fontWeight: FontWeight.bold,
-                ),
+              const SizedBox(height: 14),
+
+              const Divider(height: 1),
+
+              const SizedBox(height: 12),
+
+              // DATES
+              Row(
+                children: [
+                  Expanded(
+                    child: _historyDate(
+                      Icons.calendar_today,
+                      "Issued",
+                      issueDate,
+                    ),
+                  ),
+
+                  Expanded(
+                    child: _historyDate(
+                      Icons.event_available,
+                      "Due",
+                      dueDate,
+                    ),
+                  ),
+                ],
               ),
+
+              // RETURN DATE
+              if (returnDate.isNotEmpty) ...[
+                const SizedBox(height: 10),
+
+                _historyDate(
+                  Icons.assignment_return,
+                  "Returned",
+                  returnDate,
+                ),
+              ],
             ],
           ),
         );
       }).toList(),
     );
   }
+
+  // ============================================================
+  // HISTORY DATE
+  // ============================================================
+
+  Widget _historyDate(
+    IconData icon,
+    String label,
+    String value,
+  ) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 18,
+          color: AppTheme.primary,
+        ),
+
+        const SizedBox(width: 8),
+
+        Column(
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.black54,
+              ),
+            ),
+
+            const SizedBox(height: 2),
+
+            Text(
+              value.isEmpty
+                  ? "—"
+                  : value,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight:
+                    FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -309,6 +530,7 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
         title: const Text("Member Details"),
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
+
         actions: [
           if (!_editing)
             IconButton(
@@ -333,12 +555,16 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
 
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius:
+                  BorderRadius.circular(20),
+
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color:
+                      Colors.black.withOpacity(0.08),
                   blurRadius: 20,
-                  offset: const Offset(0, 10),
+                  offset:
+                      const Offset(0, 10),
                 ),
               ],
             ),
@@ -349,12 +575,16 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
 
               children: [
 
+                // ==================================================
                 // MEMBER HEADER
+                // ==================================================
+
                 Row(
                   children: [
                     const CircleAvatar(
                       radius: 30,
-                      backgroundColor: AppTheme.primary,
+                      backgroundColor:
+                          AppTheme.primary,
                       child: Icon(
                         Icons.person,
                         color: Colors.white,
@@ -386,8 +616,10 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
                             member['member_code']
                                     ?.toString() ??
                                 '',
-                            style: const TextStyle(
-                              color: Colors.black54,
+                            style:
+                                const TextStyle(
+                              color:
+                                  Colors.black54,
                               fontSize: 15,
                             ),
                           ),
@@ -399,7 +631,10 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
 
                 const Divider(height: 35),
 
-                // DETAILS
+                // ==================================================
+                // MEMBER DETAILS
+                // ==================================================
+
                 if (_editing) ...[
                   editField(
                     "Name",
@@ -437,7 +672,8 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
                             ? null
                             : () {
                                 setState(() {
-                                  _editing = false;
+                                  _editing =
+                                      false;
                                 });
                               },
                         child:
@@ -506,17 +742,21 @@ class _MemberDetailsScreenState extends State<MemberDetailsScreen> {
 
                 const SizedBox(height: 15),
 
+                // ==================================================
+                // BORROWING HISTORY
+                // ==================================================
+
                 const Text(
                   "Borrowing History",
                   style: TextStyle(
                     fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                    fontWeight:
+                        FontWeight.bold,
                   ),
                 ),
 
                 const SizedBox(height: 12),
 
-                // BORROWING HISTORY
                 borrowingHistorySection(),
               ],
             ),
