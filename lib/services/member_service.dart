@@ -55,12 +55,15 @@ Future<List<Map<String, dynamic>>> getBorrowingHistory(
       .from('book_issues')
       .select('''
         id,
+        member_id,
         book_id,
         issue_date,
         due_date,
         return_date,
         status,
+        created_at,
         books (
+          id,
           book_id,
           title,
           author
@@ -71,4 +74,5 @@ Future<List<Map<String, dynamic>>> getBorrowingHistory(
 
   return List<Map<String, dynamic>>.from(response);
 }
+
 }
