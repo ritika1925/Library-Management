@@ -6,6 +6,8 @@ class ReturnBookService {
   Future<void> returnBook({
     required String issueId,
   }) async {
+    print("RETURN ISSUE ID: $issueId");
+
     await _supabase.rpc(
       'return_book',
       params: {
